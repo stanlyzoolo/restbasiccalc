@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 
 	. "github.com/stanlyzoolo/basiccalc"
 )
@@ -16,25 +20,39 @@ type ReturnData struct {
 func handler(w http.ResponseWriter, r *http.Request) {
 
 	var expr = r.URL.Query().Get("expr")
-	// var expr = r.URL.Query()["expr"][1]
 
 	w.Header().Set("Content-Type", "application/json")
-
-	// fmt.Fprint(w, "Hello: ", expr)
 
 	result, err := Eval(expr)
 	data, _ := json.Marshal(ReturnData{result, err, expr})
 	w.Write(data)
-	// fmt.Fprintf(w, "Result: %v. Error: %s", result, err)
 }
 
 func main() {
 
-	http.HandleFunc("/", handler)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: http.HandlerFunc(handler),
+	}
 
-	http.HandleFunc("/test", handler)
+	go func() {
 
-	http.ListenAndServe(":8080", nil)
+		gracefulShDw := make(chan os.Signal, 1)
+		signal.Notify(gracefulShDw, os.Interrupt)
+		<-gracefulShDw
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			fmt.Printf("HTTP server Shutdown: %v", err)
+		}
+
+		close(gracefulShDw)
+	}()
+
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		fmt.Printf("HTTP server ListenAndServe: %v", err)
+
+	}
+
 }
 
 // Gracefully shutdown - читать
