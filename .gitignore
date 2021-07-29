@@ -1,2 +1,5 @@
 #Ignore binary files
 restbasiccalc
+
+#Ignore golangci configuration
+.golangci.yml
