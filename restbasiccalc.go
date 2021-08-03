@@ -21,12 +21,13 @@ type returnData struct {
 	Expr   string `json:"expr"`
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func handleExpr(w http.ResponseWriter, r *http.Request) {
 	var expr = r.URL.Query().Get("expr")
 
 	w.Header().Set("Content-Type", "application/json")
 
 	logger, _ := zap.NewDevelopment()
+
 	result, err := basiccalc.Eval(expr)
 
 	if err != nil {
@@ -57,7 +58,7 @@ func main() {
 	// nolint
 	var srv = &http.Server{
 		Addr:    fmt.Sprintf(":%v", port),
-		Handler: http.HandlerFunc(handler),
+		Handler: http.HandlerFunc(handleExpr),
 	}
 
 	go func() {
