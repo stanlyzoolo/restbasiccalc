@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ReturnData struct {
+type returnData struct {
 	Result int    `json:"result"`
 	Error  error  `json:"error"`
 	Expr   string `json:"expr"`
@@ -38,7 +38,13 @@ func handleExpr(w http.ResponseWriter, r *http.Request) {
 			zap.Error(err))
 	}
 
-	data, errW := json.Marshal(ReturnData{result, err, expr})
+	rd := returnData{
+		Result: result,
+		Error:  err,
+		Expr:   expr,
+	}
+
+	data, errW := rd.marshalJSON()
 	if errW != nil {
 		w.WriteHeader(500) //nolint
 		logger.Error("failed evaluating an expression",
@@ -46,8 +52,19 @@ func handleExpr(w http.ResponseWriter, r *http.Request) {
 			zap.String("package", "restbasiccalc"),
 			zap.Error(errW))
 	}
-
 	w.Write(data) //nolint
+}
+
+func (rd *returnData) marshalJSON() ([]byte, error) {
+	type Alias returnData
+
+	return json.Marshal(&struct { //nolint
+		Error string `json:"error"`
+		*Alias
+	}{
+		Error: fmt.Sprint(rd.Error),
+		Alias: (*Alias)(rd),
+	})
 }
 
 func main() {

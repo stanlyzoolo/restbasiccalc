@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-type RD struct {
+type testData struct {
 	Result int    `json:"result"`
 	Error  error  `json:"error"`
 	Expr   string `json:"expr"`
@@ -30,8 +30,8 @@ func TestHandler(t *testing.T) {
 		},
 		"invalid expr": {
 			Result: 0,
-			Error:  errors.New("failed"),
-			Expr:   "2%2B%2B",
+			Error:  errors.New("unexpected token in tokenFactory() at position 2"),
+			Expr:   "2%2B*",
 			Status: 400,
 		},
 	}
@@ -40,13 +40,12 @@ func TestHandler(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", fmt.Sprintf("http://localhost:8080/?expr=%s", tc.Expr), nil)
+
 			handleExpr(w, r)
 
-			rd := new(RD)
+			rd := new(testData)
 
-			fmt.Println(string(w.Body.Bytes()))
-
-			err := json.Unmarshal(w.Body.Bytes(), rd)
+			err := rd.unmarshalJSON(w.Body.Bytes())
 
 			if err != nil {
 				t.Errorf("handler returns invalid json: %s", err)
@@ -60,10 +59,30 @@ func TestHandler(t *testing.T) {
 				t.Errorf("expected status to equal 200, got:%v", w.Result().StatusCode)
 			}
 
-			if rd.Error != tc.Error {
-				t.Errorf("unexpected error: want %v, got:%v", tc.Error, rd.Error)
+			if fmt.Sprint(tc.Error) != fmt.Sprint(rd.Error) {
+				t.Errorf("unexpected error:\n want: %v \n  got: %v", tc.Error, rd.Error)
 			}
 
 		})
 	}
+}
+
+func (rd *testData) unmarshalJSON(b []byte) error {
+	type Alias testData
+	aux := &struct {
+		Error string `json:"error"`
+		*Alias
+	}{
+		Alias: (*Alias)(rd),
+	}
+
+	err := json.Unmarshal(b, &aux)
+
+	if err != nil {
+		return err
+	}
+
+	rd.Error = errors.New(aux.Error)
+
+	return nil
 }
