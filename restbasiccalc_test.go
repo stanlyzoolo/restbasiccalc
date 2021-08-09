@@ -59,9 +59,9 @@ func TestHandler(t *testing.T) {
 				t.Errorf("expected status to equal 200, got:%v", w.Result().StatusCode)
 			}
 
-			if fmt.Sprint(tc.Error) != fmt.Sprint(rd.Error) {
+			if errors.Is(tc.Error, rd.Error) {
 				t.Errorf("unexpected error:\n want: %v \n  got: %v", tc.Error, rd.Error)
-			}
+			}	
 
 		})
 	}
