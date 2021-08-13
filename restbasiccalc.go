@@ -31,7 +31,7 @@ func handleExpr(w http.ResponseWriter, r *http.Request) {
 	result, err := basiccalc.Eval(expr)
 
 	if err != nil {
-		w.WriteHeader(400) //nolint
+		w.WriteHeader(http.StatusBadRequest)
 		logger.Error("failed evaluating an expression",
 			zap.String("400", "Bad Request"),
 			zap.String("package", "restbasiccalc"),
@@ -46,7 +46,7 @@ func handleExpr(w http.ResponseWriter, r *http.Request) {
 
 	data, errW := rd.marshalJSON()
 	if errW != nil {
-		w.WriteHeader(500) //nolint
+		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error("failed evaluating an expression",
 			zap.String("500", "Internal Server Error"),
 			zap.String("package", "restbasiccalc"),
